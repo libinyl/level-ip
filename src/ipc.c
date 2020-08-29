@@ -1,7 +1,7 @@
-#include "syshead.h"
-#include "utils.h"
 #include "ipc.h"
 #include "socket.h"
+#include "syshead.h"
+#include "utils.h"
 
 #define IPC_BUFLEN 8192
 
@@ -9,8 +9,7 @@ static LIST_HEAD(sockets);
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 static int socket_count = 0;
 
-static struct ipc_thread *ipc_alloc_thread(int sock)
-{
+static struct ipc_thread *ipc_alloc_thread(int sock) {
     struct ipc_thread *th = calloc(sizeof(struct ipc_thread), 1);
     list_init(&th->list);
     th->sock = sock;
@@ -25,11 +24,10 @@ static struct ipc_thread *ipc_alloc_thread(int sock)
     return th;
 }
 
-static void ipc_free_thread(int sock)
-{
+static void ipc_free_thread(int sock) {
     struct list_head *item, *tmp = NULL;
     struct ipc_thread *th = NULL;
-    
+
     pthread_mutex_lock(&lock);
 
     list_for_each_safe(item, tmp, &sockets) {
@@ -44,19 +42,14 @@ static void ipc_free_thread(int sock)
             socket_count--;
             break;
         }
-
     }
 
     pthread_mutex_unlock(&lock);
 }
 
-static int ipc_try_send(int sockfd, const void *buf, size_t len)
-{
-    return send(sockfd, buf, len, MSG_NOSIGNAL);
-}
+static int ipc_try_send(int sockfd, const void *buf, size_t len) { return send(sockfd, buf, len, MSG_NOSIGNAL); }
 
-static int ipc_write_rc(int sockfd, pid_t pid, uint16_t type, int rc)
-{
+static int ipc_write_rc(int sockfd, pid_t pid, uint16_t type, int rc) {
     int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err);
     struct ipc_msg *response = alloca(resplen);
 
@@ -77,7 +70,7 @@ static int ipc_write_rc(int sockfd, pid_t pid, uint16_t type, int rc)
         err.err = 0;
         err.rc = rc;
     }
-    
+
     memcpy(response->data, &err, sizeof(struct ipc_err));
 
     if (ipc_try_send(sockfd, (char *)response, resplen) == -1) {
@@ -87,9 +80,8 @@ static int ipc_write_rc(int sockfd, pid_t pid, uint16_t type, int rc)
     return 0;
 }
 
-static int ipc_read(int sockfd, struct ipc_msg *msg)
-{
-    struct ipc_read *requested = (struct ipc_read *) msg->data;
+static int ipc_read(int sockfd, struct ipc_msg *msg) {
+    struct ipc_read *requested = (struct ipc_read *)msg->data;
     pid_t pid = msg->pid;
     int rlen = -1;
     char rbuf[requested->len];
@@ -97,17 +89,16 @@ static int ipc_read(int sockfd, struct ipc_msg *msg)
 
     rlen = _read(pid, requested->sockfd, rbuf, requested->len);
 
-    int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) +
-        sizeof(struct ipc_read) + (rlen > 0 ? rlen : 0);
+    int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct ipc_read) + (rlen > 0 ? rlen : 0);
     struct ipc_msg *response = alloca(resplen);
-    struct ipc_err *error = (struct ipc_err *) response->data;
-    struct ipc_read *actual = (struct ipc_read *) error->data;
+    struct ipc_err *error = (struct ipc_err *)response->data;
+    struct ipc_read *actual = (struct ipc_read *)error->data;
 
     if (response == NULL) {
         print_err("Could not allocate memory for IPC read response\n");
         return -1;
     }
-    
+
     response->type = IPC_READ;
     response->pid = pid;
 
@@ -125,15 +116,14 @@ static int ipc_read(int sockfd, struct ipc_msg *msg)
     return 0;
 }
 
-static int ipc_write(int sockfd, struct ipc_msg *msg)
-{
-    struct ipc_write *payload = (struct ipc_write *) msg->data;
+static int ipc_write(int sockfd, struct ipc_msg *msg) {
+    struct ipc_write *payload = (struct ipc_write *)msg->data;
     pid_t pid = msg->pid;
     int rc = -1;
     int head = IPC_BUFLEN - sizeof(struct ipc_write) - sizeof(struct ipc_msg);
 
     char buf[payload->len];
-    
+
     memset(buf, 0, payload->len);
     memcpy(buf, payload->buf, payload->len > head ? head : payload->len);
 
@@ -149,14 +139,13 @@ static int ipc_write(int sockfd, struct ipc_msg *msg)
             print_err("Hmm, we did not read exact payload amount in IPC write\n");
         }
     }
-        
+
     rc = _write(pid, payload->sockfd, buf, payload->len);
 
     return ipc_write_rc(sockfd, pid, IPC_WRITE, rc);
 }
 
-static int ipc_connect(int sockfd, struct ipc_msg *msg)
-{
+static int ipc_connect(int sockfd, struct ipc_msg *msg) {
     struct ipc_connect *payload = (struct ipc_connect *)msg->data;
     pid_t pid = msg->pid;
     int rc = -1;
@@ -166,8 +155,7 @@ static int ipc_connect(int sockfd, struct ipc_msg *msg)
     return ipc_write_rc(sockfd, pid, IPC_CONNECT, rc);
 }
 
-static int ipc_socket(int sockfd, struct ipc_msg *msg)
-{
+static int ipc_socket(int sockfd, struct ipc_msg *msg) {
     struct ipc_socket *sock = (struct ipc_socket *)msg->data;
     pid_t pid = msg->pid;
     int rc = -1;
@@ -177,8 +165,7 @@ static int ipc_socket(int sockfd, struct ipc_msg *msg)
     return ipc_write_rc(sockfd, pid, IPC_SOCKET, rc);
 }
 
-static int ipc_close(int sockfd, struct ipc_msg *msg)
-{
+static int ipc_close(int sockfd, struct ipc_msg *msg) {
     struct ipc_close *payload = (struct ipc_close *)msg->data;
     pid_t pid = msg->pid;
     int rc = -1;
@@ -190,8 +177,7 @@ static int ipc_close(int sockfd, struct ipc_msg *msg)
     return rc;
 }
 
-static int ipc_poll(int sockfd, struct ipc_msg *msg)
-{
+static int ipc_poll(int sockfd, struct ipc_msg *msg) {
     struct ipc_poll *data = (struct ipc_poll *)msg->data;
     pid_t pid = msg->pid;
     int rc = -1;
@@ -226,10 +212,10 @@ static int ipc_poll(int sockfd, struct ipc_msg *msg)
         err.err = 0;
         err.rc = rc;
     }
-    
+
     memcpy(response->data, &err, sizeof(struct ipc_err));
 
-    struct ipc_pollfd *polled = (struct ipc_pollfd *) ((struct ipc_err *)response->data)->data;
+    struct ipc_pollfd *polled = (struct ipc_pollfd *)((struct ipc_err *)response->data)->data;
 
     for (int i = 0; i < data->nfds; i++) {
         polled[i].fd = fds[i].fd;
@@ -240,12 +226,11 @@ static int ipc_poll(int sockfd, struct ipc_msg *msg)
     if (ipc_try_send(sockfd, (char *)response, resplen) == -1) {
         perror("Error on writing IPC poll response");
     }
-        
+
     return 0;
 }
 
-static int ipc_fcntl(int sockfd, struct ipc_msg *msg)
-{
+static int ipc_fcntl(int sockfd, struct ipc_msg *msg) {
     struct ipc_fcntl *fc = (struct ipc_fcntl *)msg->data;
     pid_t pid = msg->pid;
     int rc = -1;
@@ -261,12 +246,11 @@ static int ipc_fcntl(int sockfd, struct ipc_msg *msg)
         print_err("IPC Fcntl cmd not supported %d\n", fc->cmd);
         rc = -EINVAL;
     }
-    
+
     return ipc_write_rc(sockfd, pid, IPC_FCNTL, rc);
 }
 
-static int ipc_getsockopt(int sockfd, struct ipc_msg *msg)
-{
+static int ipc_getsockopt(int sockfd, struct ipc_msg *msg) {
     struct ipc_sockopt *opts = (struct ipc_sockopt *)msg->data;
 
     pid_t pid = msg->pid;
@@ -294,10 +278,10 @@ static int ipc_getsockopt(int sockfd, struct ipc_msg *msg)
         err.err = 0;
         err.rc = rc;
     }
-    
+
     memcpy(response->data, &err, sizeof(struct ipc_err));
 
-    struct ipc_sockopt *optres = (struct ipc_sockopt *) ((struct ipc_err *)response->data)->data;
+    struct ipc_sockopt *optres = (struct ipc_sockopt *)((struct ipc_err *)response->data)->data;
 
     optres->fd = opts->fd;
     optres->level = opts->level;
@@ -312,8 +296,7 @@ static int ipc_getsockopt(int sockfd, struct ipc_msg *msg)
     return rc;
 }
 
-static int ipc_getpeername(int sockfd, struct ipc_msg *msg)
-{
+static int ipc_getpeername(int sockfd, struct ipc_msg *msg) {
     struct ipc_sockname *name = (struct ipc_sockname *)msg->data;
 
     pid_t pid = msg->pid;
@@ -330,9 +313,9 @@ static int ipc_getpeername(int sockfd, struct ipc_msg *msg)
     response->type = IPC_GETPEERNAME;
     response->pid = pid;
 
-    struct ipc_sockname *nameres = (struct ipc_sockname *) ((struct ipc_err *)response->data)->data;
+    struct ipc_sockname *nameres = (struct ipc_sockname *)((struct ipc_err *)response->data)->data;
     rc = _getpeername(pid, name->socket, (struct sockaddr *)nameres->sa_data, &nameres->address_len);
-    
+
     struct ipc_err err;
 
     if (rc < 0) {
@@ -342,11 +325,11 @@ static int ipc_getpeername(int sockfd, struct ipc_msg *msg)
         err.err = 0;
         err.rc = rc;
     }
-    
+
     memcpy(response->data, &err, sizeof(struct ipc_err));
 
     nameres->socket = name->socket;
-    
+
     if (ipc_try_send(sockfd, (char *)response, resplen) == -1) {
         perror("Error on writing IPC getpeername response");
     }
@@ -354,8 +337,7 @@ static int ipc_getpeername(int sockfd, struct ipc_msg *msg)
     return rc;
 }
 
-static int ipc_getsockname(int sockfd, struct ipc_msg *msg)
-{
+static int ipc_getsockname(int sockfd, struct ipc_msg *msg) {
     struct ipc_sockname *name = (struct ipc_sockname *)msg->data;
 
     pid_t pid = msg->pid;
@@ -372,9 +354,9 @@ static int ipc_getsockname(int sockfd, struct ipc_msg *msg)
     response->type = IPC_GETSOCKNAME;
     response->pid = pid;
 
-    struct ipc_sockname *nameres = (struct ipc_sockname *) ((struct ipc_err *)response->data)->data;
+    struct ipc_sockname *nameres = (struct ipc_sockname *)((struct ipc_err *)response->data)->data;
     rc = _getsockname(pid, name->socket, (struct sockaddr *)nameres->sa_data, &nameres->address_len);
-    
+
     struct ipc_err err;
 
     if (rc < 0) {
@@ -384,7 +366,7 @@ static int ipc_getsockname(int sockfd, struct ipc_msg *msg)
         err.err = 0;
         err.rc = rc;
     }
-    
+
     memcpy(response->data, &err, sizeof(struct ipc_err));
 
     nameres->socket = name->socket;
@@ -396,8 +378,7 @@ static int ipc_getsockname(int sockfd, struct ipc_msg *msg)
     return rc;
 }
 
-static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
-{
+static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen) {
     struct ipc_msg *msg = (struct ipc_msg *)cmdbuf;
 
     switch (msg->type) {
@@ -432,7 +413,7 @@ static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
         print_err("No such IPC type %d\n", msg->type);
         break;
     };
-    
+
     return 0;
 }
 
@@ -457,24 +438,23 @@ void *socket_ipc_open(void *args) {
     if (rc == -1) {
         perror("socket ipc read");
     }
-    
+
     return NULL;
 }
 
-void *start_ipc_listener()
-{
+void *start_ipc_listener() {
     int fd, rc, datasock;
-    struct sockaddr_un un;
+    struct sockaddr_un un; // unix 域 coket
     char *sockname = "/tmp/lvlip.socket";
 
-    unlink(sockname);
-    
+    unlink(sockname); // 保证不存在已有的 socket // todo
+
     if (strnlen(sockname, sizeof(un.sun_path)) == sizeof(un.sun_path)) {
         // Path is too long
         print_err("Path for UNIX socket is too long\n");
         exit(-1);
     }
-        
+
     if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
         perror("IPC listener UNIX socket");
         exit(EXIT_FAILURE);
@@ -484,8 +464,8 @@ void *start_ipc_listener()
     un.sun_family = AF_UNIX;
     strncpy(un.sun_path, sockname, sizeof(un.sun_path) - 1);
 
-    rc = bind(fd, (const struct sockaddr *) &un, sizeof(struct sockaddr_un));
-  
+    rc = bind(fd, (const struct sockaddr *)&un, sizeof(struct sockaddr_un));
+
     if (rc == -1) {
         perror("IPC bind");
         exit(EXIT_FAILURE);
@@ -498,9 +478,8 @@ void *start_ipc_listener()
         exit(EXIT_FAILURE);
     }
 
-    if (chmod(sockname, S_IRUSR | S_IWUSR | S_IXUSR |
-              S_IRGRP | S_IWGRP | S_IXGRP |
-              S_IROTH | S_IWOTH | S_IXOTH) == -1) {
+    if (chmod(sockname, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH) ==
+        -1) {
         perror("Chmod on lvl-ip IPC UNIX socket failed");
         exit(EXIT_FAILURE);
     }

@@ -42,7 +42,7 @@ struct eth_hdr {
 static inline struct eth_hdr *eth_hdr(struct sk_buff *skb) {
     struct eth_hdr *hdr = (struct eth_hdr *)skb_head(skb);
 
-    hdr->ethertype = ntohs(hdr->ethertype);
+    hdr->ethertype = ntohs(hdr->ethertype); // 网络字节顺序转换为主机字节顺序
 
     return hdr;
 }

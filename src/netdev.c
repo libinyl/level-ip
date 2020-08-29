@@ -79,6 +79,8 @@ static int netdev_receive(struct sk_buff *skb) {
 /**
  *
  * 不断从 tun 读取数据
+ * rx:  Receive (from)
+ * tx:  Transmit (to)
  * https://blog.csdn.net/qq_35579835/article/details/106965008
  *
  */
