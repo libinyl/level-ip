@@ -9,6 +9,9 @@
 #define RT_REJECT   0x08
 #define RT_UP       0x10
 
+/**
+ * rtentry = route entry
+ */
 struct rtentry {
     struct list_head list;
     uint32_t dst;

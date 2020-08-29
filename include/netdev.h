@@ -15,6 +15,10 @@
 
 struct eth_hdr;
 
+/**
+ * https://www.kernel.org/doc/html/latest/networking/netdev-FAQ.html
+ *
+ */
 struct netdev {
     uint32_t addr;
     uint8_t addr_len;

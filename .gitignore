@@ -6,3 +6,6 @@ a.out
 lvl-ip
 tests/venv
 vgcore*
+.DS_Store
+.idea/
+cmake-*
