@@ -5,6 +5,7 @@
 /**
  * 参考: https://www.cnblogs.com/charlieroro/p/13497340.html
  *      https://www.kernel.org/doc/Documentation/networking/tuntap.rst
+ *      https://www.ibm.com/developerworks/cn/linux/l-tuntap/?ca=dwcn-newsletter-linux#ibm-pcon
  *
  */
 
@@ -14,6 +15,9 @@ static char *dev;
 char *tapaddr = "10.0.0.5";
 char *taproute = "10.0.0.0/24";
 
+/**
+ * https://phoenixnap.com/kb/linux-ip-command-examples
+ */
 static int set_if_route(char *dev, char *cidr) { return run_cmd("ip route add dev %s %s", dev, cidr); }
 
 static int set_if_address(char *dev, char *cidr) { return run_cmd("ip address add dev %s local %s", dev, cidr); }
@@ -61,7 +65,8 @@ static int tun_alloc(char *dev) {
     }
 
     /**
-     * 创建设备, 用 fd 引用
+     * 把 fd 注册到内核中
+     *
      */
     if ((err = ioctl(fd, TUNSETIFF, (void *)&ifr)) < 0) {
         perror("ERR: Could not ioctl tun");
@@ -73,6 +78,7 @@ static int tun_alloc(char *dev) {
      * 把创建成功的网卡名称回写到 dev
      */
     strcpy(dev, ifr.ifr_name);
+    printf("%s",dev);
     return fd;
 }
 
@@ -82,17 +88,17 @@ int tun_write(char *buf, int len) { return write(tun_fd, buf, len); }
 
 void tun_init() {
     dev = calloc(10, 1);
-    tun_fd = tun_alloc(dev);
+    tun_fd = tun_alloc(dev); // 注册
 
-    if (set_if_up(dev) != 0) {
+    if (set_if_up(dev) != 0) { // 使能
         print_err("ERROR when setting up if\n");
     }
 
-    if (set_if_route(dev, taproute) != 0) {
+    if (set_if_route(dev, taproute) != 0) { // 设置路由
         print_err("ERROR when setting route for if\n");
     }
 
-    if (set_if_address(dev, tapaddr) != 0) {
+    if (set_if_address(dev, tapaddr) != 0) { // 设置地址
         print_err("ERROR when setting addr for if\n");
     }
 }
