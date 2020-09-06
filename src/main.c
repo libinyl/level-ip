@@ -56,13 +56,12 @@ static void *stop_stack_handler(void *arg) {
 
 // 屏蔽 SIGINT 和 SIGQUIT
 static void init_signals() {
-    int err;
 
     sigemptyset(&mask);
     sigaddset(&mask, SIGINT);
     sigaddset(&mask, SIGQUIT);
 
-    if ((err = pthread_sigmask(SIG_BLOCK, &mask, NULL)) != 0) {
+    if ((pthread_sigmask(SIG_BLOCK, &mask, NULL)) != 0) {
         print_err("SIG_BLOCK error\n");
         exit(1);
     }

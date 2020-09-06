@@ -8,6 +8,10 @@
 
 /**
  * socket buffer = skb
+ *
+ *
+ *
+ *
  */
 struct sk_buff {
     struct list_head list;

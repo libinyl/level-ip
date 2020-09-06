@@ -78,7 +78,6 @@ static int tun_alloc(char *dev) {
      * 把创建成功的网卡名称回写到 dev
      */
     strcpy(dev, ifr.ifr_name);
-    printf("%s",dev);
     return fd;
 }
 

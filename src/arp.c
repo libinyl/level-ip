@@ -41,6 +41,10 @@ static int insert_arp_translation_table(struct arp_hdr *hdr, struct arp_ipv4 *da
     return 0;
 }
 
+
+/**
+ * 更新 arp 缓存表, 若有更新项返回 1,若无更新项返回 0
+ */
 static int update_arp_translation_table(struct arp_hdr *hdr, struct arp_ipv4 *data) {
     struct list_head *item;
     struct arp_cache_entry *entry;
@@ -68,7 +72,7 @@ void arp_rcv(struct sk_buff *skb) {
     struct arp_hdr *arphdr;
     struct arp_ipv4 *arpdata;
     struct netdev *netdev;
-    int merge = 0;
+    int merge;
 
     arphdr = arp_hdr(skb);
 
@@ -77,12 +81,12 @@ void arp_rcv(struct sk_buff *skb) {
     arphdr->opcode = ntohs(arphdr->opcode);
     arp_dbg("in", arphdr);
 
-    if (arphdr->hwtype != ARP_ETHERNET) {
+    if (arphdr->hwtype != ARP_ETHERNET) { // 仅支持 ETHERNET 硬件
         printf("ARP: Unsupported HW type\n");
         goto drop_pkt;
     }
 
-    if (arphdr->protype != ARP_IPV4) {
+    if (arphdr->protype != ARP_IPV4) { // 仅支持 IPV4 协议
         printf("ARP: Unsupported protocol\n");
         goto drop_pkt;
     }
@@ -100,6 +104,7 @@ void arp_rcv(struct sk_buff *skb) {
         goto drop_pkt;
     }
 
+    // 若 arp 缓存表中无匹配项则插入一条
     if (!merge && insert_arp_translation_table(arphdr, arpdata) != 0) {
         print_err("ERR: No free space in ARP translation table\n");
         goto drop_pkt;

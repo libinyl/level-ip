@@ -384,25 +384,18 @@ static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen) {
     switch (msg->type) {
     case IPC_SOCKET:
         return ipc_socket(sockfd, msg);
-        break;
     case IPC_CONNECT:
         return ipc_connect(sockfd, msg);
-        break;
     case IPC_WRITE:
         return ipc_write(sockfd, msg);
-        break;
     case IPC_READ:
         return ipc_read(sockfd, msg);
-        break;
     case IPC_CLOSE:
         return ipc_close(sockfd, msg);
-        break;
     case IPC_POLL:
         return ipc_poll(sockfd, msg);
-        break;
     case IPC_FCNTL:
         return ipc_fcntl(sockfd, msg);
-        break;
     case IPC_GETSOCKOPT:
         return ipc_getsockopt(sockfd, msg);
     case IPC_GETPEERNAME:

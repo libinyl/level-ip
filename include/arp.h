@@ -53,8 +53,9 @@
 #define arpcache_dbg(str, entry)
 #endif
 
+// 相关定义在 linux/if_arp.h 中
 struct arp_hdr {
-    uint16_t hwtype;  // 硬件类型  0x01 << 0: ARP_ETHERNET;  0x01 << 7: ARP_IPV4
+    uint16_t hwtype;  // 硬件类型  0x01 << 0: ARP_ETHERNET;  0x01 << 7 = : ARP_IPV4
     uint16_t protype; // 协议类型
     uint8_t hwsize;   // 硬件地址长度
     uint8_t prosize;  // 协议地址长度
@@ -64,7 +65,7 @@ struct arp_hdr {
 
 struct arp_ipv4 {
     unsigned char smac[6];
-    uint32_t sip;
+    uint32_t sip; //
     unsigned char dmac[6];
     uint32_t dip;
 } __attribute__((packed));

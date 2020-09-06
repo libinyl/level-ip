@@ -35,7 +35,7 @@ void netdev_init() {
 int netdev_transmit(struct sk_buff *skb, uint8_t *dst_hw, uint16_t ethertype) {
     struct netdev *dev;
     struct eth_hdr *hdr;
-    int ret = 0;
+    int ret;
 
     dev = skb->dev;
 

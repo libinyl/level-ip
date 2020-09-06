@@ -14,7 +14,7 @@ lvl-ip: $(obj)
 build/%.o: src/%.c ${headers}
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
-debug: CFLAGS+= -DDEBUG_SOCKET -DDEBUG_TCP -g -fsanitize=thread
+debug: CFLAGS+= -DDEBUG_ARP -DDEBUG_SOCKET -DDEBUG_TCP -DDEBUG_ETH -g -fsanitize=thread
 debug: lvl-ip
 
 apps: $(apps)
@@ -23,6 +23,7 @@ apps: $(apps)
 	$(MAKE) -C apps/curl-poll
 
 all: lvl-ip apps
+	sudo setcap cap_setpcap,cap_net_admin=ep lvl-ip
 
 test: debug apps
 	@echo
