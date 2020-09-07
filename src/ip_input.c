@@ -19,7 +19,7 @@ int ip_rcv(struct sk_buff *skb)
     struct iphdr *ih = ip_hdr(skb);
     uint16_t csum = -1;
 
-    if (ih->version != IPV4) {
+    if (ih->version != IPV4) { // 仅支持 ipv4
         print_err("Datagram version was not IPv4\n");
         goto drop_pkt;
     }

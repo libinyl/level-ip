@@ -23,7 +23,7 @@ struct netdev {
     uint32_t addr;
     uint8_t addr_len;
     uint8_t hwaddr[6];
-    uint32_t mtu;
+    uint32_t mtu; // Maximum Transmission Unit 最大传输单元 用来通知对方所能接受数据服务单元的最大尺寸，说明发送方能够接受的有效载荷大小
 };
 
 void netdev_init();

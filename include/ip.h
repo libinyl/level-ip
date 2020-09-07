@@ -26,20 +26,22 @@
 #else
 #define ip_dbg(msg, hdr)
 #endif
-
+/**
+ * https://en.wikipedia.org/wiki/IPv4
+ */
 struct iphdr {
     uint8_t ihl : 4; /* TODO: Support Big Endian hosts */ // ihl = Internet Header Length,  IPv4 header 长度 , >=5 ( 20
                                                           // 字节 ) && <= 15 (60 字节)
     uint8_t version : 4; // 版本
-    uint8_t tos;
-    uint16_t len;
-    uint16_t id;
-    uint16_t frag_offset;
-    uint8_t ttl;
-    uint8_t proto;
-    uint16_t csum;
-    uint32_t saddr;
-    uint32_t daddr;
+    uint8_t tos;         // type of service
+    uint16_t len; // Total Length : header 和 data 的总长度. 最小为 20 字节, 即 header 长度, 最大为 65,535 字节.
+    uint16_t id;          // 唯一 id
+    uint16_t frag_offset; // Fragment Offset,
+    uint8_t ttl;          // Time To Live
+    uint8_t proto;        // 协议编号 https://en.wikipedia.org/wiki/List_of_IP_protocol_numbers
+    uint16_t csum;        // Header Checksum https://en.wikipedia.org/wiki/IPv4_header_checksum
+    uint32_t saddr;       // 发总者 ip 地址
+    uint32_t daddr;       // 发送目标 ip 地址
     uint8_t data[];
 } __attribute__((packed));
 
